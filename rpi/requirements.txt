@@ -1,0 +1,3 @@
+awsiotsdk
+gpiozero
+python-dotenv

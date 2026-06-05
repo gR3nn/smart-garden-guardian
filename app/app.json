@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Smart Garden Guardian",
+    "slug": "smart-garden-mobile",
+    "version": "0.1.0",
+    "icon": "./assets/app-icon.png",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#eef7e8"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "android": {
+      "package": "com.smartgardenguardian.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/app-icon.png",
+        "backgroundColor": "#eef7e8"
+      }
+    }
+  }
+}
