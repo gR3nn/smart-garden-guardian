@@ -1,260 +1,198 @@
 # Smart Garden Guardian
 
-Smart Garden Guardian is an IoT and cloud-based irrigation monitoring and control system built for a practical garden watering setup. The project started from a real use case: a family garden that needs regular observation and watering. The system combines an ESP32 sensor node, a Raspberry Pi valve controller, AWS cloud services, a React web dashboard, and an Android mobile application.
+Smart Garden Guardian is an end-to-end IoT irrigation platform built around a real family garden use case. It combines embedded sensing, secure cloud messaging, serverless backend services, a React web dashboard, and an Android mobile app to monitor garden conditions and trigger watering remotely.
 
-The goal is to monitor garden conditions remotely, visualize historical sensor data, send watering commands safely, and create cloud-based watering schedules.
+This project is strong portfolio material because it is not just a UI or just firmware work. It connects hardware, cloud infrastructure, data pipelines, and user-facing applications into one working system.
 
-## Main Features
+![Smart Garden Guardian architecture](docs/readme/architecture-overview.jpg)
 
-- Live garden telemetry: soil moisture, temperature, humidity, rain detection, and valve status.
-- ESP32 sensor node that publishes telemetry to AWS IoT Core using MQTT over TLS.
-- Raspberry Pi valve controller that subscribes to MQTT commands and controls a relay/MOSFET-driven 12 V solenoid valve.
-- React web dashboard for telemetry cards, charts, manual valve control, and watering schedules.
-- Android mobile app for quick garden status checks, manual watering commands, and schedule management.
-- AWS backend using API Gateway, Lambda, DynamoDB, IoT Core, IoT Rules, and EventBridge Scheduler.
-- Recurring watering schedules created through the web or mobile app.
-- AI-assisted weekly watering plan that uses weather forecast data and latest garden telemetry to suggest one-time watering schedules for the selected week.
+## Project Highlights
+
+- Built a complete IoT system with an ESP32 sensor node, Raspberry Pi 5 actuator controller, AWS backend, React web app, and Expo/React Native mobile app.
+- Implemented secure MQTT over TLS with X.509 certificates for device-to-cloud communication through AWS IoT Core.
+- Designed a serverless backend with Lambda, API Gateway, DynamoDB, IoT Rules, and EventBridge Scheduler.
+- Added remote valve control, telemetry history, recurring watering schedules, and AI-assisted weekly watering recommendations.
+- Kept the browser and mobile clients lightweight by moving weather lookup, schedule orchestration, and AI planning into backend services.
+
+## What It Does
+
+- Reads soil moisture, rain, temperature, and humidity from the garden.
+- Publishes telemetry from the ESP32 to AWS IoT Core.
+- Stores latest readings, historical readings, schedules, and valve events in DynamoDB.
+- Lets users monitor garden status from a web dashboard or Android app.
+- Sends manual watering commands to a Raspberry Pi that controls a 12V solenoid valve.
+- Creates recurring schedules and one-time weekly schedules in EventBridge Scheduler.
+- Generates an AI weekly watering plan from the latest telemetry plus Open-Meteo forecast data.
 
 ## System Architecture
 
-The system is divided into four main layers:
+The system is split into four layers:
 
-1. **Edge sensing**
-   - ESP32 reads soil moisture, rain, temperature, and humidity sensors.
-   - Telemetry is sent as JSON over MQTT to AWS IoT Core.
+1. `Edge sensing`: ESP32 reads sensors and publishes JSON telemetry.
+2. `Cloud backend`: AWS IoT Core, IoT Rules, Lambda, API Gateway, DynamoDB, and EventBridge Scheduler handle ingestion, APIs, commands, and schedules.
+3. `User applications`: React web and Android mobile clients read data and send actions through REST APIs.
+4. `Actuation`: Raspberry Pi subscribes to watering commands and switches a relay-driven 12V solenoid valve.
 
-2. **Cloud backend**
-   - AWS IoT Core receives telemetry and routes it through IoT Rules.
-   - AWS Lambda functions process telemetry, commands, schedules, and AI watering plans.
-   - DynamoDB stores latest readings, history, command logs, and schedules.
-   - EventBridge Scheduler triggers watering commands at configured times.
+### Data Flow
 
-3. **User applications**
-   - React web dashboard communicates with API Gateway.
-   - Android app communicates with the same REST API.
-   - Users can monitor telemetry, view history, control the valve, and manage schedules.
+1. ESP32 publishes telemetry to `smart-garden/node01/telemetry`.
+2. AWS IoT Core receives the message and an IoT Rule invokes `ingest-telemetry`.
+3. Lambda stores readings in DynamoDB.
+4. Web and mobile clients call API Gateway endpoints such as `/latest`, `/history`, `/command`, and `/schedules`.
+5. Manual or scheduled watering commands are published to `smart-garden/node01/commands`.
+6. Raspberry Pi executes the command and publishes valve status to `smart-garden/node01/status`.
 
-4. **Actuation**
-   - Raspberry Pi subscribes to the command MQTT topic.
-   - It opens or closes the valve through a relay/MOSFET driver.
-   - It publishes valve status updates back to AWS IoT Core.
+## Demo Surfaces
 
-## Hardware Components
+### Web dashboard
 
-- ESP32 development board
-- Raspberry Pi 5
-- Capacitive soil moisture sensor
-- Rain sensor module
-- DHT11 temperature and humidity sensor
-- Relay or MOSFET driver module
-- 12 V solenoid valve
-- External 12 V power supply
+The web app is the main monitoring and control interface. It shows live telemetry, valve status, history charts, recent readings, recurring schedules, and AI-generated weekly plans.
 
-## Cloud Services Used
+![Web dashboard](docs/readme/web-dashboard.jpg)
 
-- **AWS IoT Core**: MQTT broker for telemetry, commands, and valve status.
-- **AWS IoT Rules**: routes MQTT telemetry payloads to Lambda.
-- **AWS Lambda**: backend logic for API endpoints and MQTT publishing.
-- **Amazon DynamoDB**: stores sensor readings, valve status, command logs, and schedules.
-- **Amazon API Gateway**: REST API used by the web dashboard and Android app.
-- **Amazon EventBridge Scheduler**: runs scheduled watering commands.
-- **Google Gemini API**: generates AI-assisted weekly watering recommendations.
-- **Open-Meteo API**: provides weather forecast and city geocoding data.
+![History and recurring schedules](docs/readme/history-and-schedules.jpg)
+
+![AI weekly watering plan](docs/readme/ai-weekly-plan.jpg)
+
+### Android mobile app
+
+The Android app uses the same backend API and provides portable access to garden status, watering controls, history, and schedule management.
+
+![Android mobile app](docs/readme/mobile-app.jpg)
+
+### Hardware prototype
+
+The prototype separates sensing from actuation: the ESP32 handles telemetry near the sensors, while the Raspberry Pi controls the valve path indoors through a relay module.
+
+![Hardware prototype](docs/readme/hardware-prototype.jpg)
+
+## Technical Stack
+
+| Layer | Technologies |
+| --- | --- |
+| Embedded sensing | ESP32, Arduino, DHT11, capacitive soil moisture sensor, rain sensor |
+| Actuation | Raspberry Pi 5, Python, `awsiotsdk`, `gpiozero`, relay/MOSFET driver, 12V solenoid valve |
+| Cloud | AWS IoT Core, AWS IoT Rules, AWS Lambda, Amazon API Gateway, Amazon DynamoDB, Amazon EventBridge Scheduler |
+| Web | React, TypeScript, Vite, Recharts |
+| Mobile | Expo, React Native, TypeScript |
+| External APIs | Open-Meteo, Google Gemini |
+
+## Notable Engineering Decisions
+
+- `Secure device communication`: device traffic uses MQTT over TLS instead of exposing direct cloud credentials in the frontend.
+- `Thin clients`: browser and mobile apps call REST endpoints only; AWS certificates, weather logic, and Gemini API usage stay in the backend.
+- `Separated sensing and actuation`: telemetry collection and valve control run on different devices, which made the prototype easier to test and evolve.
+- `AI schedules are one-time only`: generated recommendations become explicit one-time schedules for a selected week, which avoids leaving stale automation behind.
 
 ## Repository Structure
 
 ```text
-smart-garden/
-├── smart-garden-web/              # React/Vite web dashboard
-├── smart-garden-app/              # Expo/React Native Android app
-├── smart-garden-rpi/              # Raspberry Pi valve controller
-├── esp32/                         # ESP32 sensor firmware
-├── aws-lambda-functions/          # AWS Lambda source files
-│   ├── generate-watering-plan/
-│   ├── create-schedule/
-│   ├── get-schedules/
-│   ├── delete-schedule/
-│   ├── execute-scheduled-watering/
-│   ├── ingest-telemetry/
-│   ├── send-command/
-│   ├── get-latest/
-│   └── get-history/
-└── docs/                          # Diagrams, screenshots, and project documentation
+smart-garden-guardian/
+├── aws-lambda-functions/   # Serverless API, ingestion, scheduling, and AI plan handlers
+├── esp32/                  # ESP32 sensor firmware
+├── rpi/                    # Raspberry Pi valve controller
+├── web/                    # React + Vite dashboard
+├── app/                    # Expo / React Native Android app
+├── docs/                   # Extracted screenshots and documentation assets
+└── Smart_Garden_Guardian_Documentation.pdf
 ```
 
-## MQTT Topics
+## API Surface
 
-| Purpose | Topic |
-|---|---|
-| ESP32 telemetry | `smart-garden/node01/telemetry` |
-| Raspberry Pi command subscription | `smart-garden/node01/commands` |
-| Raspberry Pi valve status | `smart-garden/node01/status` |
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `GET` | `/latest` | Returns the latest telemetry and valve status |
+| `GET` | `/history` | Returns recent telemetry history for charts and tables |
+| `POST` | `/command` | Sends manual valve commands |
+| `GET` | `/schedules` | Lists recurring and one-time schedules |
+| `POST` | `/schedules` | Creates recurring or one-time schedules |
+| `DELETE` | `/schedules/{schedule_id}` | Deletes a schedule |
+| `POST` | `/ai/watering-plan` | Generates a weekly AI watering plan |
 
-Example command payload:
-
-```json
-{
-  "command": "open_valve",
-  "duration_seconds": 10,
-  "source": "web",
-  "device_id": "garden_node_01",
-  "command_id": "command-123"
-}
-```
-
-Example telemetry payload:
-
-```json
-{
-  "device_id": "garden_node_01",
-  "soil_moisture": 55,
-  "temperature": 24.7,
-  "humidity": 53,
-  "rain_detected": false,
-  "timestamp": "2026-06-04T19:56:03.771Z"
-}
-```
-
-Example valve status payload:
-
-```json
-{
-  "device_id": "garden_node_01",
-  "controller": "raspberry_pi_5",
-  "valve_status": "closed",
-  "timestamp": "2026-06-04T19:56:03.771Z",
-  "source": "web",
-  "command_id": "command-123"
-}
-```
-
-## REST API Endpoints
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/latest` | Returns latest telemetry and valve status. |
-| `GET` | `/history` | Returns recent telemetry history for charts and tables. |
-| `POST` | `/command` | Sends manual valve open/close commands. |
-| `GET` | `/schedules` | Lists recurring and one-time schedules. |
-| `POST` | `/schedules` | Creates recurring or one-time schedules. |
-| `DELETE` | `/schedules/{schedule_id}` | Deletes a schedule from EventBridge Scheduler and DynamoDB. |
-| `POST` | `/ai/watering-plan` | Generates a weekly AI watering plan from city/country, weather forecast, and latest telemetry. |
-
-## Schedule Types
-
-### Recurring schedule
-
-Recurring schedules repeat daily at the selected time.
-
-```json
-{
-  "label": "Morning watering",
-  "time": "08:00",
-  "duration_seconds": 10,
-  "timezone": "Europe/Bucharest",
-  "device_id": "garden_node_01",
-  "one_time": false
-}
-```
-
-### AI weekly one-time schedule
-
-AI schedules are one-time schedules for a specific date in the generated week.
-
-```json
-{
-  "label": "AI watering - Monday",
-  "date": "2026-06-08",
-  "time": "08:00",
-  "duration_seconds": 10,
-  "timezone": "Europe/Bucharest",
-  "device_id": "garden_node_01",
-  "one_time": true
-}
-```
-
-The backend creates an EventBridge `at(...)` schedule and uses `ActionAfterCompletion: DELETE` so the schedule is removed after it runs.
-
-## Environment Variables
+## Local Setup
 
 ### Web dashboard
 
-```env
-VITE_API_BASE_URL=https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com
-VITE_DEVICE_ID=garden_node_01
-```
-
-### Lambda functions
-
-Common values:
-
-```env
-AWS_REGION=us-east-1
-READINGS_TABLE=SmartGardenReadings
-SCHEDULES_TABLE=SmartGardenSchedules
-DEFAULT_DEVICE_ID=garden_node_01
-```
-
-Schedule Lambda values:
-
-```env
-EXECUTE_LAMBDA_ARN=arn:aws:lambda:us-east-1:YOUR_ACCOUNT_ID:function:smartGardenExecuteScheduledWatering
-SCHEDULER_ROLE_ARN=arn:aws:iam::YOUR_ACCOUNT_ID:role/SmartGardenSchedulerInvokeLambdaRole
-```
-
-AI watering plan Lambda values:
-
-```env
-GEMINI_API_KEY=your_gemini_api_key
-GEMINI_MODEL=gemini-1.5-flash
-DEFAULT_CITY=Bucharest
-DEFAULT_COUNTRY=RO
-DEFAULT_LOCATION_NAME=Bucharest, RO
-```
-
-## Local Web App Setup
-
 ```bash
-cd smart-garden-web
+cd web
 npm install
+cp .env.example .env
 npm run dev
 ```
 
-Build for hosting:
-
-```bash
-npm run build
-```
-
-## Hosting
-
-The React web dashboard can be hosted as a static site on Vercel. The AWS backend remains deployed on API Gateway, Lambda, DynamoDB, IoT Core, and EventBridge Scheduler.
-
-Required Vercel environment variables:
+Required environment variables:
 
 ```env
-VITE_API_BASE_URL=https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com
+VITE_API_BASE_URL=https://YOUR_API_GATEWAY_URL
+VITE_APP_NAME=Smart Garden Guardian
 VITE_DEVICE_ID=garden_node_01
 ```
 
-After deployment, add the Vercel URL to API Gateway CORS allowed origins.
+### Android app
 
-## Safety Notes
+```bash
+cd app
+npm install
+cp .env.example .env
+npm run android
+```
 
-- The system controls a real water valve. Keep durations short during testing.
-- The project does not include a physical water flow sensor, so the UI should not claim that water flow is confirmed.
-- The valve status indicates the controller command state, not measured flow.
-- Do not commit AWS certificates, private keys, Gemini API keys, or `.env` files.
+Required environment variables:
 
-## Future Work
+```env
+EXPO_PUBLIC_API_BASE_URL=https://YOUR_API_GATEWAY_URL
+EXPO_PUBLIC_APP_NAME=Smart Garden Guardian
+EXPO_PUBLIC_DEVICE_ID=garden_node_01
+EXPO_PUBLIC_USER_NAME=Garden Keeper
+```
 
-- Add user authentication and role-based access control.
-- Add stricter API authorization and production CORS rules.
-- Add a physical water flow sensor to confirm actual water movement.
-- Add better calibration for soil moisture sensors.
-- Add push notifications for dry soil, rain detection, and schedule execution.
-- Improve AI planning with plant type, soil type, and seasonal watering profiles.
+### Raspberry Pi controller
 
-## License
+```bash
+cd rpi
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+```
 
-This project is intended for academic and demonstration purposes.
+Key configuration values:
+
+```env
+AWS_IOT_ENDPOINT=your-endpoint-ats.iot.us-east-1.amazonaws.com
+AWS_IOT_COMMAND_TOPIC=smart-garden/node01/commands
+AWS_IOT_STATUS_TOPIC=smart-garden/node01/status
+DEVICE_ID=garden_node_01
+RELAY_GPIO=17
+MAX_WATERING_SECONDS=15
+```
+
+### ESP32 firmware
+
+Create `esp32/secrets.h` from `esp32/secrets.example.h` and provide:
+
+- Wi-Fi credentials
+- AWS IoT endpoint
+- Root CA
+- Device certificate
+- Device private key
+
+## Resume-Oriented Summary
+
+If you need a concise description for a CV or portfolio:
+
+> Built an end-to-end smart irrigation platform using ESP32, Raspberry Pi, AWS IoT Core, Lambda, DynamoDB, API Gateway, EventBridge Scheduler, React, and React Native; implemented secure MQTT telemetry, remote valve control, historical analytics, cloud schedules, and AI-assisted weekly watering recommendations.
+
+## Current Limitations
+
+- Valve status reflects command execution, not confirmed physical water flow, because the prototype does not include a flow sensor.
+- Soil moisture accuracy depends on calibration and sensor connection quality.
+- Schedule listing is prototype-oriented and could be optimized further for larger deployments.
+- Production hardening still needs authentication, authorization, and stricter public API controls.
+
+## Future Improvements
+
+- Add a water-flow sensor for physical confirmation.
+- Improve per-installation soil calibration.
+- Add notifications for dry soil, failed watering runs, or abnormal readings.
+- Introduce authentication and role-based access control for the hosted clients.
