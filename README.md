@@ -68,7 +68,7 @@ The prototype separates sensing from actuation: the ESP32 handles telemetry near
 
 The sensor node connects the ESP32 to the rain sensor, capacitive soil moisture sensor, and DHT11 module, then publishes telemetry to AWS IoT Core.
 
-![ESP32 sensor node prototype](docs/readme/esp32-sensor-node.png)
+![ESP32 sensor node prototype](docs/readme/esp32-sensor-node-circuit.png)
 
 #### Raspberry Pi valve controller
 
