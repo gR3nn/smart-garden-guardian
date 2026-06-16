@@ -64,6 +64,16 @@ The Android app uses the same backend API and provides portable access to garden
 
 The prototype separates sensing from actuation: the ESP32 handles telemetry near the sensors, while the Raspberry Pi controls the valve path indoors through a relay module.
 
+#### ESP32 sensor node
+
+The sensor node connects the ESP32 to the rain sensor, capacitive soil moisture sensor, and DHT11 module, then publishes telemetry to AWS IoT Core.
+
+![ESP32 sensor node prototype](docs/readme/esp32-sensor-node.png)
+
+#### Raspberry Pi valve controller
+
+The actuator subsystem uses a Raspberry Pi 5, relay module, and 12V solenoid valve to execute watering commands coming from the cloud.
+
 ![Hardware prototype](docs/readme/hardware-prototype.jpg)
 
 ## Technical Stack
